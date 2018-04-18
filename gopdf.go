@@ -56,6 +56,16 @@ type GoPdf struct {
 	//info
 	isUseInfo bool
 	info      *PdfInfo
+	outlines  *outlinesObj
+}
+
+func (gp *GoPdf) SetOutlinesInfo(firstId int, lastId int) {
+	if gp.outlines == nil {
+		gp.outlines = &outlinesObj{}
+		gp.outlines.innerIndex = gp.addObj(gp.outlines)
+	}
+	gp.outlines.FirstId = firstId
+	gp.outlines.LastId = lastId
 }
 
 //SetLineWidth : set line width
@@ -744,10 +754,24 @@ func (gp *GoPdf) prepare() {
 				}
 			} else if objtype == "Encryption" {
 				gp.encryptionObjID = i + 1
+			} else if objtype == "OutlineItem" {
+				gp.pdfObjs[i].(*OutlineObj).PageId = indexCurrPage + 1
+			} else if objtype == "Action" {
+				gp.pdfObjs[i].(*actionObj).PageId = indexCurrPage + 1
 			}
 			i++
 		}
 	}
+}
+
+func (gp *GoPdf) AddAction(yoffset float64) int {
+	return gp.addObj(&actionObj{
+		YOffset: yoffset,
+	})
+}
+
+func (gp *GoPdf) AddOutline(olItem *OutlineObj) int {
+	return gp.addObj(olItem)
 }
 
 func (gp *GoPdf) xref(linelens []int, buff *bytes.Buffer, i *int) error {
